@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BubblesRAT · Android C2 Framework</title>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    <style>
+        /* ───────────── RESET & BASE ───────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg: #0b0e14;
+            --bg-card: #11161f;
+            --green: #00ff88;
+            --green-dim: #00cc77;
+            --green-glow: rgba(0, 255, 136, 0.15);
+            --cyan: #00e5ff;
+            --text: #c8d6e5;
+            --text-dim: #8395a7;
+            --border: #1e2a3a;
+            --font-mono: 'Share Tech Mono', monospace;
+            --font-display: 'Orbitron', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-mono);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding: 0 1.5rem;
+        }
+
+        /* ───────────── SCROLLBAR ───────────── */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--green);
+            border-radius: 10px;
+            box-shadow: 0 0 20px var(--green-glow);
+        }
+
+        /* ───────────── MATRIX RAIN CANVAS ───────────── */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.12;
+        }
+
+        /* ───────────── GLITCH OVERLAY ───────────── */
+        .glitch-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 136, 0.008) 2px,
+                    rgba(0, 255, 136, 0.008) 4px);
+            animation: scanlines 8s linear infinite;
+        }
+        @keyframes scanlines {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        /* ───────────── WRAPPER ───────────── */
+        .site-wrapper {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 0 4rem;
+        }
+
+        /* ───────────── NAV ───────────── */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 1.6rem;
+            color: var(--green);
+            text-shadow: 0 0 20px var(--green-glow), 0 0 60px var(--green-glow);
+            letter-spacing: 2px;
+        }
+        .logo i {
+            font-size: 1.8rem;
+            color: var(--cyan);
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+        .logo span {
+            color: var(--cyan);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: 0.3s;
+            position: relative;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--green);
+            transition: 0.3s;
+            box-shadow: 0 0 10px var(--green);
+        }
+        .nav-links a:hover {
+            color: var(--green);
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* ───────────── HERO ───────────── */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 0 3rem;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(0, 255, 136, 0.08);
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            padding: 0.3rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--green);
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(4px);
+        }
+        .hero-badge i {
+            margin-right: 0.4rem;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: clamp(2.8rem, 10vw, 5.5rem);
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--green) 0%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 60px rgba(0, 255, 136, 0.2);
+            margin-bottom: 1.2rem;
+        }
+
+        .hero h1 .bracket {
+            color: var(--cyan);
+            -webkit-text-fill-color: initial;
+            background: none;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+
+        .hero p strong {
+            color: var(--green);
+            font-weight: 400;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.8rem 2.2rem;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            transition: 0.3s;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .btn-primary {
+            background: var(--green);
+            color: var(--bg);
+            border-color: var(--green);
+            font-weight: 700;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+        }
+        .btn-primary:hover {
+            background: var(--green-dim);
+            box-shadow: 0 0 60px rgba(0, 255, 136, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            border-color: var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover {
+            border-color: var(--green);
+            color: var(--green);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.05);
+        }
+
+        .btn-telegram {
+            background: #0088cc;
+            color: #fff;
+            border-color: #0088cc;
+        }
+        .btn-telegram:hover {
+            background: #006699;
+            box-shadow: 0 0 30px rgba(0, 136, 204, 0.3);
+            transform: translateY(-2px);
+        }
+        .btn-email {
+            background: #ea4335;
+            color: #fff;
+            border-color: #ea4335;
+        }
+        .btn-email:hover {
+            background: #c5221f;
+            box-shadow: 0 0 30px rgba(234, 67, 53, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* ───────────── TERMINAL STATS ───────────── */
+        .terminal-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0 4rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .terminal-stats .stat {
+            text-align: center;
+        }
+        .terminal-stats .stat .number {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--green);
+            text-shadow: 0 0 20px var(--green-glow);
+        }
+        .terminal-stats .stat .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-top: 0.2rem;
+        }
+
+        /* ───────────── SECTION HEADERS ───────────── */
+        .section-header {
+            text-align: center;
+            margin: 4rem 0 2.5rem;
+        }
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 2.2rem;
+            color: var(--green);
+            text-shadow: 0 0 30px var(--green-glow);
+            letter-spacing: 1px;
+        }
+        .section-header h2 i {
+            color: var(--cyan);
+            margin-right: 0.5rem;
+        }
+        .section-header .sub {
+            color: var(--text-dim);
+            font-size: 1rem;
+            margin-top: 0.4rem;
+        }
+
+        /* ───────────── FEATURES GRID ───────────── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem 1.8rem;
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--green), transparent);
+            opacity: 0;
+            transition: 0.4s;
+        }
+        .feature-card:hover {
+            border-color: var(--green);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 255, 136, 0.04);
+        }
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+        .feature-card .icon {
+            font-size: 2.2rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+            display: block;
+        }
+        .feature-card h3 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 0.6rem;
+            letter-spacing: 0.5px;
+        }
+        .feature-card p {
+            font-size: 0.92rem;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+        .feature-card .tag {
+            display: inline-block;
+            margin-top: 1rem;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--green);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+        }
+
+        /* ───────────── HOW IT WORKS ───────────── */
+        .how-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            counter-reset: step;
+        }
+        .step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+            transition: 0.3s;
+        }
+        .step:hover {
+            border-color: var(--green);
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.04);
+        }
+        .step .step-num {
+            font-family: var(--font-display);
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: rgba(0, 255, 136, 0.12);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+        .step h4 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+            margin-bottom: 0.4rem;
+        }
+        .step p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+        .step .arrow {
+            font-size: 1.8rem;
+            color: var(--green);
+            opacity: 0.3;
+            margin-top: 0.5rem;
+        }
+
+        /* ───────────── IMAGE PLACEHOLDERS ───────────── */
+        .img-placeholder {
+            width: 100%;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 3rem 2rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            text-align: center;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+        }
+        .img-placeholder i {
+            font-size: 3.5rem;
+            color: var(--green);
+            opacity: 0.25;
+            margin-bottom: 0.8rem;
+        }
+        .img-placeholder .glow-ring {
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.03), transparent 70%);
+            animation: pulse-ring 6s ease-in-out infinite;
+        }
+        @keyframes pulse-ring {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.6;
+            }
+        }
+        .img-placeholder .label {
+            position: relative;
+            z-index: 2;
+        }
+        .img-placeholder .label strong {
+            color: var(--green);
+            font-weight: 400;
+        }
+
+        /* ───────────── MODULES / TESTIMONIALS REPLACEMENT ───────────── */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.8rem;
+        }
+        .module-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.8rem;
+            transition: 0.3s;
+        }
+        .module-card:hover {
+            border-color: var(--green);
+        }
+        .module-card .mod-icon {
+            font-size: 2rem;
+            color: var(--cyan);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .module-card h4 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 0.3rem;
+        }
+        .module-card p {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        /* ───────────── CTA (CONTACT) ───────────── */
+        .cta-section {
+            margin: 4rem 0 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3.5rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(0, 255, 136, 0.03), transparent 70%);
+            animation: pulse-ring 10s ease-in-out infinite;
+        }
+        .cta-section h2 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 0.6rem;
+            position: relative;
+        }
+        .cta-section h2 i {
+            color: var(--green);
+        }
+        .cta-section p {
+            color: var(--text-dim);
+            max-width: 500px;
+            margin: 0 auto 1.8rem;
+            position: relative;
+        }
+        .cta-section .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        /* Contact toggle */
+        .contact-toggle {
+            margin-top: 1.5rem;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            animation: fadeUp 0.4s ease;
+        }
+        .contact-toggle.open {
+            display: flex;
+        }
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .contact-toggle .contact-buttons {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .contact-toggle .contact-note {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            background: rgba(0, 255, 136, 0.05);
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+        }
+
+        /* ───────────── FOOTER ───────────── */
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        footer .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        footer .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        footer .footer-links a:hover {
+            color: var(--green);
+        }
+        footer .footer-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--green);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+        footer .footer-badge i {
+            animation: blink 1.4s step-end infinite;
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* ───────────── RESPONSIVE ───────────── */
+        @media (max-width: 768px) {
+            body {
+                padding: 0 1rem;
+            }
+            nav {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .nav-links {
+                flex-wrap: wrap;
+                gap: 1rem;
+                font-size: 0.8rem;
+            }
+            .hero h1 {
+                font-size: 2.6rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .terminal-stats {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 1.5rem;
+            }
+            .section-header h2 {
+                font-size: 1.8rem;
+            }
+            .cta-section {
+                padding: 2.5rem 1.2rem;
+            }
+            .cta-section h2 {
+                font-size: 1.6rem;
+            }
+            footer {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .terminal-stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+            .terminal-stats .stat .number {
+                font-size: 1.6rem;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .how-steps {
+                grid-template-columns: 1fr;
+            }
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .hero-cta {
+                width: 100%;
+            }
+            .cta-section .btn-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            .contact-toggle .contact-buttons {
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+            }
+            .contact-toggle .contact-buttons .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ─── MATRIX RAIN CANVAS ─── -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- ─── GLITCH OVERLAY ─── -->
+    <div class="glitch-overlay"></div>
+
+    <!-- ─── SITE WRAPPER ─── -->
+    <div class="site-wrapper">
+
+        <!-- ═══ NAV ═══ -->
+        <nav>
+            <div class="logo">
+                <i class="fas fa-bolt"></i>
+                Bubble<span>sRAT</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#modules">Modules</a></li>
+                <li><a href="#contact" class="btn btn-primary" style="padding:0.4rem 1.2rem;font-size:0.75rem;">Contact</a></li>
+            </ul>
+        </nav>
+
+        <!-- ═══ HERO ═══ -->
+        <section class="hero">
+            <div class="hero-badge">
+                <i class="fas fa-shield-alt"></i> Framework v2.0 · C2 Server + Android Agent
+            </div>
+            <h1>
+                <span class="bracket">&lt;</span> BubblesRAT <span class="bracket">/&gt;</span>
+            </h1>
+            <p>
+                <strong>Build · Deploy · Monitor.</strong> <br />
+                BubblesRAT is a self-hosted Android remote administration framework — <br />
+                a web control panel, a persistent Android agent, and a one-click APK builder. <br />
+                Run it entirely on your own server.
+            </p>
+            <div class="hero-cta">
+                <a href="#contact" class="btn btn-primary"><i class="fas fa-comment"></i> Message for enquiries</a>
+                <a href="#features" class="btn btn-outline"><i class="fas fa-chevron-right"></i> Explore Features</a>
+            </div>
+        </section>
+
+        <!-- ═══ TERMINAL STATS ═══ -->
+        <div class="terminal-stats">
+            <div class="stat">
+                <div class="number">20+</div>
+                <div class="label">Built-in Modules</div>
+            </div>
+            <div class="stat">
+                <div class="number">24/7</div>
+                <div class="label">Web Dashboard</div>
+            </div>
+            <div class="stat">
+                <div class="number">0</div>
+                <div class="label">Root Required</div>
+            </div>
+            <div class="stat">
+                <div class="number">1-click</div>
+                <div class="label">APK Builder</div>
+            </div>
+        </div>
+
+        <!-- ═══ FEATURES ═══ -->
+        <section id="features">
+            <div class="section-header">
+                <h2><i class="fas fa-microchip"></i> Core Capabilities</h2>
+                <div class="sub">— everything you need to manage a device from your browser —</div>
+            </div>
+
+            <div class="features-grid">
+
+                <div class="feature-card">
+                    <span class="icon"><i class="fas fa-eye"></i></span>
+                    <h3>Live Victim Dashboard</h3>
+                    <p>Connected devices appear in real time with model, Android version, IP, battery level, root status and online/offline state.</p>
+                    <span class="tag">Real-time</span>
+                </div>
+
+                <div class="feature-card">
+                    <span class="icon"><i class="fas fa-map-pin"></i></span>
+                    <h3>GPS & Location</h3>
+                    <p>On-demand GPS fixes and live location. The agent can even switch the device's location services on when they are disabled.</p>
+                    <span class="tag">GPS</span>
+                </div>
+
+                <div class="feature-card">
+                    <span class="icon"><i class="fas fa-camera"></i></span>
+                    <h3>Camera & Mic</h3>
+                    <p>Front and rear camera shots with at-will switching, live camera streaming, and on-demand ambient audio recordings.</p>
+                    <span class="tag">Front/Back</span>
+                </div>
+
+                <div class="feature-card">
+                    <span class="icon"><i class="fas fa-folder-open"></i></span>
+                    <h3>File Manager</h3>
+                    <p>Browse the device filesystem and stream-download files in chunks straight to your browser, with delete support.</p>
+                    <span class="tag">Chunked DL</span>
+                </div>
+
+                <div class="feature-card">
+                    <span class="icon"><i class="fas fa-sms"></i></span>
+                    <h3>SMS · Contacts · Calls</h3>
+                    <p>Read and send SMS, dump the contact list, and pull full call logs — everything in one control panel.</p>
+                    <span class="tag">Full Access</span>
+                </div>
+
+                <div class="feature-card">
+                    <span class="icon"><i class="fas fa-terminal"></i></span>
+                    <h3>Remote Shell</h3>
+                    <p>Run interactive shell commands on the device and get results back instantly — no rooting required.</p>
+                    <span class="tag">Interactive</span>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ═══ IMAGE SHOWCASE ═══ -->
+        <section style="margin: 3rem 0;">
+            <div class="section-header">
+                <h2><i class="fas fa-image"></i> Dashboard Preview</h2>
+                <div class="sub">— add your dashboard screenshots below —</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.8rem;">
+
+                <div class="img-placeholder">
+                    <div class="glow-ring"></div>
+                    <i class="fas fa-chart-pie"></i>
+                    <div class="label">
+                        <strong>Victims Dashboard</strong> — live devices, battery & root status
+                    </div>
+                </div>
+
+                <div class="img-placeholder">
+                    <div class="glow-ring"></div>
+                    <i class="fas fa-terminal"></i>
+                    <div class="label">
+                        <strong>Control Panel</strong> — remote shell & file manager
+                    </div>
+                </div>
+
+                <div class="img-placeholder">
+                    <div class="glow-ring"></div>
+                    <i class="fas fa-video"></i>
+                    <div class="label">
+                        <strong>Live View</strong> — camera stream & screen capture
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ═══ HOW IT WORKS ═══ -->
+        <section id="how-it-works">
+            <div class="section-header">
+                <h2><i class="fas fa-code"></i> How It Works</h2>
+                <div class="sub">— from build to control in three steps —</div>
+            </div>
+
+            <div class="how-steps">
+                <div class="step">
+                    <div class="step-num">01</div>
+                    <h4><i class="fas fa-cubes" style="color:var(--cyan);margin-right:0.4rem;"></i> Build</h4>
+                    <p>Generate the APK in one click — app name, icon, package and your C2 address are embedded automatically.</p>
+                    <div class="arrow"><i class="fas fa-arrow-down"></i></div>
+                </div>
+                <div class="step">
+                    <div class="step-num">02</div>
+                    <h4><i class="fas fa-download" style="color:var(--cyan);margin-right:0.4rem;"></i> Install</h4>
+                    <p>Install the APK and open it once — permissions are requested, then the service keeps running in the background.</p>
+                    <div class="arrow"><i class="fas fa-arrow-down"></i></div>
+                </div>
+                <div class="step">
+                    <div class="step-num">03</div>
+                    <h4><i class="fas fa-desktop" style="color:var(--cyan);margin-right:0.4rem;"></i> Monitor</h4>
+                    <p>Open your web dashboard from any browser and control the device — shell, files, camera, mic, location and more.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ MODULES (replaces testimonials) ═══ -->
+        <section id="modules">
+            <div class="section-header">
+                <h2><i class="fas fa-puzzle-piece"></i> Built-in Modules</h2>
+                <div class="sub">— every module ships with the framework —</div>
+            </div>
+
+            <div class="modules-grid">
+                <div class="module-card">
+                    <span class="mod-icon"><i class="fas fa-keyboard"></i></span>
+                    <h4>Keylogger</h4>
+                    <p>Accessibility‑based keylogging that streams typed text back to the dashboard in real time.</p>
+                </div>
+                <div class="module-card">
+                    <span class="mod-icon"><i class="fas fa-camera-retro"></i></span>
+                    <h4>Screen Capture</h4>
+                    <p>On‑demand screenshots and a live screen stream right inside the browser.</p>
+                </div>
+                <div class="module-card">
+                    <span class="mod-icon"><i class="fas fa-video"></i></span>
+                    <h4>Camera Stream</h4>
+                    <p>Live camera feed with instant front/back switching — no restart required.</p>
+                </div>
+                <div class="module-card">
+                    <span class="mod-icon"><i class="fas fa-microphone"></i></span>
+                    <h4>Mic Recording</h4>
+                    <p>Record ambient audio on demand and play it back straight from the dashboard.</p>
+                </div>
+                <div class="module-card">
+                    <span class="mod-icon"><i class="fas fa-th-list"></i></span>
+                    <h4>App List</h4>
+                    <p>Enumerate every installed application with package names for full visibility.</p>
+                </div>
+                <div class="module-card">
+                    <span class="mod-icon"><i class="fas fa-power-off"></i></span>
+                    <h4>Boot Persistence</h4>
+                    <p>The service survives reboots, task removal and network changes — and restarts itself automatically.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ CONTACT / CTA SECTION ═══ -->
+        <section id="contact" class="cta-section">
+            <h2><i class="fas fa-server"></i> Want the full framework?</h2>
+            <p>Get the complete BubblesRAT package — server, Android agent, APK builder and setup script — and deploy it on your own machine.</p>
+
+            <!-- Main enquiry button -->
+            <div class="btn-group">
+                <button id="enquiryToggle" class="btn btn-primary" style="font-size:1.1rem; padding:1rem 3rem;">
+                    <i class="fas fa-comment-dots"></i> Message for enquiries
+                </button>
+            </div>
+
+            <!-- Hidden toggle area with contact options -->
+            <div id="contactOptions" class="contact-toggle">
+                <div class="contact-note">
+                    <i class="fas fa-lock" style="margin-right:0.4rem;"></i> Choose your preferred channel
+                </div>
+                <div class="contact-buttons">
+                    <a href="https://t.me/bubblesrat" target="_blank" class="btn btn-telegram">
+                        <i class="fab fa-telegram-plane"></i> Telegram — @bubblesrat
+                    </a>
+                    <a href="mailto:bitwallssec@gmail.com" class="btn btn-email">
+                        <i class="fas fa-envelope"></i> Email — bitwallssec@gmail.com
+                    </a>
+                </div>
+                <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem;">
+                    <i class="fas fa-arrow-up"></i> Click again to close
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FOOTER ═══ -->
+        <footer>
+            <div class="footer-badge">
+                <i class="fas fa-circle" style="color:var(--green);font-size:0.5rem;"></i>
+                BubblesRAT · Framework v2.0
+            </div>
+            <div class="footer-links">
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-github"></i></a>
+                <a href="#"><i class="fab fa-discord"></i></a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+            <span>© 2026 · <span style="color:var(--green);">//</span> self-hosted C2 framework</span>
+        </footer>
+
+    </div>
+    <!-- ─── END SITE WRAPPER ─── -->
+
+    <script>
+        // ─── MATRIX RAIN ───
+        (function matrixRain() {
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+
+            let w, h, columns, drops;
+
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+                columns = Math.floor(w / 20);
+                drops = Array(columns).fill(1);
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            const chars = '0123456789ABCDEF';
+
+            function draw() {
+                ctx.fillStyle = 'rgba(11,14,20,0.05)';
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.fillStyle = '#00ff88';
+                ctx.font = '16px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const ch = chars[Math.floor(Math.random() * chars.length)];
+                    const x = i * 20;
+                    const y = drops[i] * 20;
+
+                    ctx.globalAlpha = 0.4 + Math.random() * 0.3;
+                    ctx.fillText(ch, x, y);
+
+                    if (y > h || Math.random() > 0.98) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // ─── SMOOTH SCROLL FOR NAV LINKS ───
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // ─── TERMINAL TYPING EFFECT ON HERO BADGE ───
+        (function typeBadge() {
+            const badge = document.querySelector('.hero-badge');
+            const words = ['C2 Framework v2.0', 'Dashboard Online', 'Agent Connected', 'Framework Ready'];
+            let idx = 0;
+            setInterval(() => {
+                idx = (idx + 1) % words.length;
+                badge.style.opacity = '0';
+                setTimeout(() => {
+                    badge.innerHTML = `<i class="fas fa-shield-alt"></i> ${words[idx]}`;
+                    badge.style.opacity = '1';
+                }, 300);
+            }, 4000);
+        })();
+
+        // ─── CONTACT TOGGLE ───
+        const toggleBtn = document.getElementById('enquiryToggle');
+        const contactOptions = document.getElementById('contactOptions');
+
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            contactOptions.classList.toggle('open');
+            if (contactOptions.classList.contains('open')) {
+                toggleBtn.innerHTML = '<i class="fas fa-times"></i> Close options';
+            } else {
+                toggleBtn.innerHTML = '<i class="fas fa-comment-dots"></i> Message for enquiries';
+            }
+        });
+
+        // Close contact options when clicking outside
+        document.addEventListener('click', function(e) {
+            const target = e.target;
+            const isInside = toggleBtn.contains(target) || contactOptions.contains(target);
+            if (!isInside && contactOptions.classList.contains('open')) {
+                contactOptions.classList.remove('open');
+                toggleBtn.innerHTML = '<i class="fas fa-comment-dots"></i> Message for enquiries';
+            }
+        });
+    </script>
+
+</body>
+</html>
